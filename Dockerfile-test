@@ -1,0 +1,24 @@
+FROM node:20
+
+WORKDIR /home/node/app
+
+COPY package*.json ./
+COPY .npmrc ./
+
+# Fix missing library libssl1.1 required by mongo-memory-server
+RUN wget http://ftp.us.debian.org/debian/pool/main/o/openssl/libssl1.1_1.1.1n-0+deb10u3_amd64.deb
+RUN dpkg -i libssl1.1_1.1.1n-0+deb10u3_amd64.deb
+
+RUN npm install \
+    && rm -f .npmrc
+
+COPY . .
+
+RUN chown -R node:node /home/node
+
+RUN mkdir -p uploads
+RUN chown -R node:node uploads
+
+USER node
+
+CMD ["npm", "run", "test:ci"]
