@@ -1,7 +1,5 @@
 FROM node:20 AS build
 
-ARG NUMINIA_NPM_TOKEN
-
 WORKDIR /home/node/app
 
 COPY package*.json ./
@@ -15,8 +13,6 @@ RUN npm install \
 
 # Second stage: run things.
 FROM node:20
-
-ARG NUMINIA_NPM_TOKEN
 
 ENV NODE_ENV dev
 
