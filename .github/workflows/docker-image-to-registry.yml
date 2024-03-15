@@ -1,0 +1,19 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build the Docker image
+      run: |
+          docker build . -f Dockerfile -t ghcr.io/${{ github.repository_owner }}/${GITHUB_REF_SLUG}:$(date +%s)
+          docker push ghcr.io/${{ github.repository_owner }}/${GITHUB_REF_SLUG}
