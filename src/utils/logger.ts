@@ -8,11 +8,13 @@ export interface ILogger {
 }
 
 export default (title: string): ILogger => {
-  function logInfo(message: string, labels?: Record<string, unknown>): void {
+  function logInfo(message: string, options?: Record<string, unknown>): void {
     if (environmentList.includes(process.env.NODE_ENV || '')) {
       console.info({
+        discord: false,
+        ...options,
         message: `${title} - ${message}`,
-        labels: labels ? { ...labels } : { message },
+        labels: options && options.labels ? { ...options.labels } : { message },
       });
     }
   }
