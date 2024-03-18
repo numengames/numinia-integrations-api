@@ -10,9 +10,9 @@ import { TLoggerConfig } from '../config/types';
 
 const { combine, prettyPrint } = format;
 
-const ignoreMessageList = (ignoreList: Array<string>) => format((info) => {
-  return ignoreList.some(item => info.message.includes(item)) ? false : info;
-})();
+const ignoreMessageList = (ignoreList: Array<string>) => format((info) => (
+  ignoreList.some(item => JSON.stringify(info).includes(item)) ? false : info
+))();
 
 export default ({ loki, discord }: TLoggerConfig, app: Application): void => {
   const transportList: TransportStream[] = [
@@ -47,9 +47,6 @@ export default ({ loki, discord }: TLoggerConfig, app: Application): void => {
     if (discord.isActive) {
       transportList.push(new DiscordTransport({
         level: 'info',
-        format: combine(
-          ignoreMessageList(['api/v1'])
-        ),
         webhook: discord.webhook,
         defaultMeta: { service: discord.service },
       }));
@@ -65,6 +62,7 @@ export default ({ loki, discord }: TLoggerConfig, app: Application): void => {
   const morganOptions: StreamOptions = {
     write: function (message: string) {
       logger.info.call(logger, {
+        discord: false,
         message: message.trim(),
         labels: { message: message.trim() }
       });
