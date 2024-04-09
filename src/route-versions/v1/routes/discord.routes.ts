@@ -1,11 +1,12 @@
 import { Router } from 'express';
 
+import logger from '../../../utils/logger';
 import DiscordController from '../controllers/discord.controller';
 
 export default class DiscordRoutes {
   router: Router;
 
-  discordController = new DiscordController();
+  discordController = new DiscordController(logger);
 
   constructor() {
     this.router = Router();
