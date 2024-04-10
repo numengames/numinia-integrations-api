@@ -36,17 +36,21 @@ Once you have configured the environment variables, you can start the server loc
 
 ### Send a notification to discord
 
-It currently includes functionality to integrate with Discord for sending push notifications but aims to be the gateway for integrations with all Numinia services, including OpenAI, payment gateways, and more.
+> Functionality to integrate with Discord for sending push notifications.
 
-- URL: `/api/discord/notify`
+- URL: `/api/v1/discord/sendWebHook`
 - Method: `POST`
 - Request Body:
 ```json
 {
-  "message": "Example message that will be sent to Discord."
+  "season": 1,
+  "userName": "Test",
+  "spaceName": "Steiner Dreams",
+  "spaceUrl": "https://test.com",
+  "walletId": "0x00000000000000000000dead",
 }
 ```
-- Successful Response: `202 OK`
+- Successful Response: `204 OK`
 - Error Response: `4xx` or `5xx` with descriptive message.
 
 ## Contributing
