@@ -1,15 +1,18 @@
 import { Router } from 'express';
 
-import logger from '../../../utils/logger';
-import MonitController from '../controllers/monit.controller';
+import { ILogger } from '../../../utils/logger';
+import MonitController, { IMonitController } from '../controllers/monit.controller';
 
 export default class MonitRoutes {
   router: Router;
 
-  monitController = new MonitController(logger);
+  private monitController: IMonitController;
 
-  constructor() {
+  constructor(logger: (title: string) => ILogger) {
     this.router = Router();
+    
+    this.monitController = new MonitController({ logger });
+
     this.routes();
   }
 
