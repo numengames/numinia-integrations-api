@@ -1,3 +1,5 @@
+import openaiAssistants from './openai/assistants';
+
 export default {
   port: 8000,
   logger: {
@@ -13,5 +15,9 @@ export default {
       service: 'numinia-integrations-api',
       webhook: process.env.DISCORD_WEBHOOK || 'test'
     }
+  },
+  openai: {
+    token: process.env.OPEN_AI_TOKEN || 'test',
+    assistants: openaiAssistants,
   },
 };
