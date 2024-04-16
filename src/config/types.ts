@@ -15,5 +15,6 @@ export type TLoggerConfig = {
 
 export type TBaseConfig = {
   port: number,
+  openAIToken: string,
   logger: TLoggerConfig,
 }

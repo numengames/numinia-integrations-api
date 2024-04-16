@@ -53,6 +53,39 @@ Once you have configured the environment variables, you can start the server loc
 - Successful Response: `204 OK`
 - Error Response: `4xx` or `5xx` with descriptive message.
 
+### Chat with openAI
+
+> Functionality to send messages to chatGPT
+
+- URL: `/api/v1/openai/send-text-message`
+- Method: `POST`
+- Request Body:
+```json
+{
+  "message": "test",
+  "temperature": "TEMP_LOW | TEMP_MEDIUM | TEMP_HIGH",
+}
+```
+- Successful Response: `200 OK`
+- Error Response: `4xx` or `5xx` with descriptive message.
+
+### Chat with OpenAI assistant
+
+> Functionality to send messages to a chatGPT preloaded numinia assistant
+
+- URL: `/api/v1/openai/assistant/send-text-message`
+- Method: `POST`
+- Request Body:
+```json
+{
+  "message": "test",
+  "temperature": "TEMP_LOW | TEMP_MEDIUM | TEMP_HIGH",
+  "assistant": "BOBA | GUMALA | THOTH | LYRA | SENET | NIMROD | PROCYON",
+}
+```
+- Successful Response: `200 OK`
+- Error Response: `4xx` or `5xx` with descriptive message.
+
 ## Contributing
 
 We welcome contributions! If you'd like to improve this project, please follow these steps:

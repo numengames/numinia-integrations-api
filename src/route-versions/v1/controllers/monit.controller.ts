@@ -2,14 +2,22 @@ import { Request, Response } from 'express';
 
 import { ILogger } from '../../../utils/logger';
 
-export default class MonitController {
-  private _log;
+export interface IMonitController {
+  getHealthStatus: (req: Request, res: Response) => void
+}
 
-  constructor(logger: (title: string) => ILogger) {
-    this._log = logger('MonitController');
+type TMonitControllerParams = {
+  logger: (title: string) => ILogger
+}
+
+export default class MonitController implements IMonitController {
+  private readonly _logger;
+
+  constructor({ logger }: TMonitControllerParams) {
+    this._logger = logger('MonitController');
   }
 
-  getHealthStatus(req: Request, res: Response) {
-    res.status(200).send();
+  getHealthStatus(req: Request, res: Response): void {
+    res.status(200).send.bind(res);
   }
 }
