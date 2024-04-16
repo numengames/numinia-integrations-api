@@ -6,8 +6,8 @@ import { assistants, temperatures } from '../../config/openai';
 
 export interface IOpenAIService {
   getAudioFromMessage: ({ message }: { message: any }) => Promise<Buffer>
-  sendMessageToChatGPT: ({ hasVoiceResponse, temperature, message, model }: Record<string, string>, callback: (text?: string) => void) => Promise<void|string>
-  sendMessageToAssistantStream: ({ assistant, hasVoiceResponse, temperature, message }: Record<string, string>, callback: (text?: string) => void) => Promise<void|string>
+  sendMessage: ({ hasVoiceResponse, temperature, message, model }: Record<string, string>, callback: (text?: string) => void) => Promise<void|string>
+  sendMessageToAssistant: ({ assistant, hasVoiceResponse, temperature, threadId }: Record<string, string>, callback: (text?: string) => void) => Promise<void|string>
 }
 
 type TOpenAIService = {
@@ -32,7 +32,7 @@ export default class OpenAIService implements IOpenAIService {
   } 
 
   private _getAssistantId(assistant: string): string {
-    return assistants[assistant].openaiId;
+    return assistants[assistant]?.openaiId;
   }
 
   async getAudioFromMessage({ message }: Record<string, any>): Promise<Buffer> {
@@ -61,20 +61,20 @@ export default class OpenAIService implements IOpenAIService {
         });
       });
     } catch (error) {
-      console.log(error);
+      this._logger.logError(error);
       throw new Error();
     }
   }
 
-  async sendMessageToChatGPT({ message: content, hasVoiceResponse, temperature, model }: Record<string, string>, callback: (text?: string) => void): Promise<void|string> {
+  async sendMessage({ message: content, hasVoiceResponse, temperature, model }: Record<string, string>, callback: (text?: string) => void): Promise<void|string> {
     try {
       const temp = this._getTemperature(temperature);
 
       const stream = await this._openaiClient.chat.completions.create({
         stream: true,
         model: model || 'gpt-3.5-turbo',
-        temperature: temp || temperatures.TEMP_MEDIUM,
         messages: [{ role: 'user', content }],
+        temperature: temp || temperatures.TEMP_MEDIUM,
       });
 
       let message = '';
@@ -98,7 +98,7 @@ export default class OpenAIService implements IOpenAIService {
     }
   }
 
-  async sendMessageToAssistantStream({ assistant, hasVoiceResponse, temperature, message: content }: Record<string, string>, callback: (text?: string) => void): Promise<void|string> {    
+  async sendMessageToAssistant({ assistant, hasVoiceResponse, temperature, message: content }: Record<string, string>, callback: (text?: string) => void): Promise<void|string> {    
     try {
       const temp = this._getTemperature(temperature);
       const assistantId = this._getAssistantId(assistant);

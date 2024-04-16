@@ -6,8 +6,8 @@ import validateOpenaiSendMessageInputParams from '../../../validators/validate-o
 import validateOpenaiSendMessageWithAssistantInputParams from '../../../validators/validate-openai-send-message-with-assistant-input-params';
 
 export interface IOpenAIController {
-  sendTextMessage: (req: Request, res: Response, next: NextFunction) => void
-  assistantSendTextMessage: (req: Request, res: Response, next: NextFunction) => void
+  sendTextMessage: (req: Request, res: Response, next: NextFunction) => Promise<void>
+  assistantSendTextMessage: (req: Request, res: Response, next: NextFunction) => Promise<void>
 }
 
 type TOpenAIParams = {
@@ -26,11 +26,7 @@ export default class OpenAIController implements IOpenAIController {
   }
 
   private _manageTextResponse(res: Response, text?: string) {
-    if (text !== undefined) {
-      res.write(text);
-    } else {
-      res.end();
-    }
+    text !== undefined ? res.write(text) : res.end();
   }
 
   private _manageAudioResponse(buffer: Buffer, res: Response) {
@@ -38,43 +34,39 @@ export default class OpenAIController implements IOpenAIController {
     res.send(buffer);
   }
 
-  private async _processTextResponse(params: Record<string, string>, res: Response): Promise<void> {
-    const { assistant, hasVoiceResponse } = params;
-
+  async sendTextMessage(req: Request, res: Response, next: NextFunction): Promise<void> {
     const textResponse = (text?: string) => { this._manageTextResponse(res, text); };
 
-    if (assistant) {
-      if (hasVoiceResponse) {
-        const message = await this.openAIService.sendMessageToAssistantStream(params, () => {});
-        const stream = await this.openAIService.getAudioFromMessage({ message });
-        this._manageAudioResponse(stream, res);
-      } else {
-        await this.openAIService.sendMessageToAssistantStream(params, textResponse);
-      }
-    } else {
-      if (hasVoiceResponse) {
-        const message = await this.openAIService.sendMessageToChatGPT(params, () => {});
-        const stream = await this.openAIService.getAudioFromMessage({ message });
-        this._manageAudioResponse(stream, res);
-      } else {
-        await this.openAIService.sendMessageToChatGPT(params, textResponse);
-      }
-    }
-  }
-
-  sendTextMessage(req: Request, res: Response, next: NextFunction) {
     Promise.resolve(req.body)
-      .tap(() => this._logger.logInfo('sendMessageToOpenAI'))
+      .tap(() => this._logger.logInfo('sendTextMessage'))
       .then(validateOpenaiSendMessageInputParams)
-      .then((params) => this._processTextResponse(params, res))
+      .then(async (params) => {
+        if (params.hasVoiceResponse) {
+          const message = await this.openAIService.sendMessage(params, () => {});
+          const stream = await this.openAIService.getAudioFromMessage({ message });
+          this._manageAudioResponse(stream, res);
+        } else {
+          await this.openAIService.sendMessage(params, textResponse);
+        }
+      })
       .catch(next);
   }
 
-  assistantSendTextMessage(req: Request, res: Response, next: NextFunction) {
+  async assistantSendTextMessage(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const textResponse = (text?: string) => { this._manageTextResponse(res, text); };
+
     Promise.resolve(req.body)
-      .tap(() => this._logger.logInfo('sendMessageToOpenAIWithAssistant'))
+      .tap(() => this._logger.logInfo('assistantSendTextMessage'))
       .then(validateOpenaiSendMessageWithAssistantInputParams)
-      .then((params) => this._processTextResponse(params, res))
+      .then(async (params) => {
+        if (params.hasVoiceResponse) {
+          const message = await this.openAIService.sendMessageToAssistant(params, () => {});
+          const stream = await this.openAIService.getAudioFromMessage({ message });
+          this._manageAudioResponse(stream, res);
+        } else {
+          await this.openAIService.sendMessageToAssistant(params, textResponse);
+        }
+      })
       .catch(next);
   }
 }

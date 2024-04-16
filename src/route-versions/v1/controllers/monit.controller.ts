@@ -11,13 +11,13 @@ type TMonitControllerParams = {
 }
 
 export default class MonitController implements IMonitController {
-  private _log;
+  private readonly _logger;
 
   constructor({ logger }: TMonitControllerParams) {
-    this._log = logger('MonitController');
+    this._logger = logger('MonitController');
   }
 
   getHealthStatus(req: Request, res: Response): void {
-    Promise.resolve().then(res.status(200).send.bind(res));
+    res.status(200).send.bind(res);
   }
 }
