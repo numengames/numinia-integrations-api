@@ -18,6 +18,6 @@ export default class MonitController implements IMonitController {
   }
 
   getHealthStatus(req: Request, res: Response): void {
-    res.status(200).send.bind(res);
+    res.status(204).send();
   }
 }
