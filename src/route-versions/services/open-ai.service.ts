@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 import { ILogger } from '../../utils/logger';
 import { openaiStreamError } from '../../errors';
 import { assistants, temperatures } from '../../config/openai';
+import { RunCreateParamsStreaming } from 'openai/resources/beta/threads/runs/runs';
 
 export interface IOpenAIService {
   getAudioFromMessage: ({ message }: { message: any }) => Promise<Buffer>
@@ -105,14 +106,17 @@ export default class OpenAIService implements IOpenAIService {
 
       this._logger.logInfo('sendMessageToAssistantStreamRaw - Creating the thread');
       const thread = await this._openaiClient.beta.threads.create({
-        messages: [{ role: 'user', content }]
+        messages: [{ role: 'assistant', content }]
       });
 
       this._logger.logInfo(`sendMessageToAssistantStreamRaw - Trying to send a message to the assistant ${assistant} with id ${assistantId}`);
-      const stream = await this._openaiClient.beta.threads.runs.create(
-        thread.id,
-        { assistant_id: assistantId, stream: true, temperature: temp || temperatures.TEMP_MEDIUM }
-      );
+      const params: RunCreateParamsStreaming = { assistant_id: assistantId, stream: true };
+
+      if (temp) {
+        params.temperature = temp;
+      }
+
+      const stream = await this._openaiClient.beta.threads.runs.create(thread.id, params);
 
       let message = '';
 
