@@ -32,6 +32,10 @@ const assistants: Record<string, TAssistant> = {
     name: 'Procyon',
     openaiId: 'asst_7kyqWW3pv5HOXwYyy9BNQOSX'
   },
+  SENET_DUNGEON_WORLD_MASTER: {
+    name: 'Senet Dungeon World Master',
+    openaiId: 'asst_2psVgXP5Qtx0EcLf34yyK2YG'
+  },
 };
 
 export default assistants;
