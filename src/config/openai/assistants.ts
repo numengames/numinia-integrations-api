@@ -30,7 +30,7 @@ const assistants: Record<string, TAssistant> = {
   },
   PROCYON: {
     name: 'Procyon',
-    openaiId: 'asst_7kyqWW3pv5HOXwYyy9BNQOSX'
+    openaiId: 'asst_KwCoshgx2q1xDmjNek3YFplT'
   },
   SENET_DUNGEON_WORLD_MASTER: {
     name: 'Senet Dungeon World Master',
