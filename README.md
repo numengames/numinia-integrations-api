@@ -41,15 +41,17 @@ Once you have configured the environment variables, you can start the server loc
 - URL: `/api/v1/discord/sendWebHook`
 - Method: `POST`
 - Request Body:
+
 ```json
 {
   "season": 1,
   "userName": "Test",
   "spaceName": "Steiner Dreams",
   "spaceUrl": "https://test.com",
-  "walletId": "0x00000000000000000000dead",
+  "walletId": "0x00000000000000000000dead"
 }
 ```
+
 - Successful Response: `204 OK`
 - Error Response: `4xx` or `5xx` with descriptive message.
 
@@ -60,12 +62,14 @@ Once you have configured the environment variables, you can start the server loc
 - URL: `/api/v1/openai/send-text-message`
 - Method: `POST`
 - Request Body:
+
 ```json
 {
   "message": "test",
-  "temperature": "TEMP_LOW | TEMP_MEDIUM | TEMP_HIGH",
+  "temperature": "TEMP_LOW | TEMP_MEDIUM | TEMP_HIGH"
 }
 ```
+
 - Successful Response: `200 OK`
 - Error Response: `4xx` or `5xx` with descriptive message.
 
@@ -76,13 +80,15 @@ Once you have configured the environment variables, you can start the server loc
 - URL: `/api/v1/openai/assistant/send-text-message`
 - Method: `POST`
 - Request Body:
+
 ```json
 {
   "message": "test",
   "temperature": "TEMP_LOW | TEMP_MEDIUM | TEMP_HIGH",
-  "assistant": "BOBA | GUMALA | THOTH | LYRA | SENET | NIMROD | PROCYON",
+  "assistant": "ANUZ | URSA | ANTUNJ | LESATH | KHAMBALIA | RIMA | ARLA | DEDUN | GUMALA | SENET | THOTH | PROCYON | NIMROD | SENET_DUNGEON_WORLD_MASTER"
 }
 ```
+
 - Successful Response: `200 OK`
 - Error Response: `4xx` or `5xx` with descriptive message.
 

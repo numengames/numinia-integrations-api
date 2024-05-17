@@ -5,10 +5,14 @@ import { paramNotValidError } from '../errors';
 import openaiAssistants from '../config/openai/assistants';
 
 const schema = Joi.object({
+  model: Joi.string().trim(),
   temperature: Joi.string().trim(),
   message: Joi.string().trim().required(),
   hasVoiceResponse: Joi.boolean().default(false),
-  assistant:  Joi.string().uppercase().trim().valid(...Object.keys(openaiAssistants)),
+  assistant: Joi.string()
+    .uppercase()
+    .trim()
+    .valid(...Object.keys(openaiAssistants)),
 });
 
 export default async (body: Request['body']) => {

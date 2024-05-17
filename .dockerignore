@@ -5,4 +5,4 @@ docs
 coverage
 *.log
 .gitignore
-gitlab.ci.yml
+.github

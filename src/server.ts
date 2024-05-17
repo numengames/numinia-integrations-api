@@ -5,11 +5,12 @@ import cors from 'cors';
 import Bluebird from 'bluebird';
 import compression from 'compression';
 
+import db from './config/db';
 import config from './config';
 
-import logger from './middlewares/logger';
 import v1Routes from './route-versions/v1';
 import handleError from './utils/handle-error';
+import { loggerMiddleware } from '@numengames/numinia-logger';
 
 global.Promise = <any>Bluebird;
 
@@ -34,7 +35,11 @@ class Server {
     this.app.use(compression());
     this.app.use(cors());
     // TODO: Try PINO package & pino-loki-transport instead of winston & winston-loki
-    logger(config.logger, this.app);
+    loggerMiddleware(config.logger, this.app);
+  }
+
+  private mongo() {
+    db.connect(config.mongo);
   }
 
   public postMiddlewareConfig(): void {

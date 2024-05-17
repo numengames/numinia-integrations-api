@@ -2,17 +2,12 @@ import Joi from 'joi';
 import { Request } from 'express';
 
 import { paramNotValidError } from '../errors';
-import openaiAssistants from '../config/openai/assistants';
 
 const schema = Joi.object({
-  temperature: Joi.string().trim(),
+  role: Joi.string().trim().required(),
+  format: Joi.string().trim().required(),
   message: Joi.string().trim().required(),
-  hasVoiceResponse: Joi.boolean().default(false),
-  assistant: Joi.string()
-    .uppercase()
-    .trim()
-    .valid(...Object.keys(openaiAssistants))
-    .required(),
+  conversationId: Joi.string().trim().required(),
 }).required();
 
 export default async (body: Request['body']) => {

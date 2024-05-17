@@ -1,7 +1,4 @@
 import assistants from './assistants';
 import temperatures from './temperatures';
 
-export {
-  assistants,
-  temperatures,
-};
+export { assistants, temperatures };
