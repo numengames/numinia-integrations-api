@@ -1,3 +1,4 @@
+import Bluebird from 'bluebird';
 import { NextFunction, Request, Response } from 'express';
 import { interfaces as loggerInterfaces } from '@numengames/numinia-logger';
 
@@ -47,7 +48,7 @@ export default class OpenAIController implements IConversationController {
     res: Response,
     next: NextFunction,
   ): Promise<void> {
-    Promise.resolve(req.body)
+    Bluebird.resolve(req.body)
       .tap(() => this.logger.logInfo('createConversation'))
       .then(validateCreateNewConversationParams)
       .then(
@@ -64,9 +65,14 @@ export default class OpenAIController implements IConversationController {
     res: Response,
     next: NextFunction,
   ): Promise<void> {
-    Promise.resolve(req.body)
+    Bluebird.resolve(req.body)
       .tap(() => this.logger.logInfo('stackMessageToConversation'))
       .then(validateStackMessageToConversationParams)
+      .then(
+        this.conversationService.parseConversationChunkParams.bind(
+          this.conversationService,
+        ),
+      )
       .then(
         this.conversationService.createConversationChunk.bind(
           this.conversationService,

@@ -1,5 +1,5 @@
-import { TMongoConfig } from './types';
 import { connect as modelConnect } from '@numengames/numinia-models';
+import { TMongoConfig } from './types';
 
 export default {
   connect: ({

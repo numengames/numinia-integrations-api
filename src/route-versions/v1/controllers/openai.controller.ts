@@ -1,25 +1,33 @@
+import Bluebird from 'bluebird';
+import {
+  constants as modelConstants,
+  interfaces as modelInterfaces,
+} from '@numengames/numinia-models';
 import { NextFunction, Request, Response } from 'express';
 import { interfaces as loggerInterfaces } from '@numengames/numinia-logger';
 
+import { roles } from '../../../config/openai';
+import { ChatCompletionMessageParam } from 'openai/resources';
 import { IOpenAIService } from '../../../services/open-ai.service';
-import validateOpenaiSendMessageInputParams from '../../../validators/validate-openai-send-message-input-params';
-import validateOpenaiSendMessageWithAssistantInputParams from '../../../validators/validate-openai-send-message-with-assistant-input-params';
+import { IConversationService } from '../../../services/conversation.service';
+import validateOpenaiHandleTextConversationInputParams from '../../../validators/validate-openai-handle-text-conversation-input-params';
 
 export interface IOpenAIController {
-  sendTextMessage: (
+  handleTextConversation(
     req: Request,
     res: Response,
     next: NextFunction,
-  ) => Promise<void>;
-  assistantSendTextMessage: (
+  ): Promise<void>;
+  handleAssistantTextConversation(
     req: Request,
     res: Response,
     next: NextFunction,
-  ) => Promise<void>;
+  ): Promise<void>;
 }
 
 type TOpenAIParams = {
   openAIService: IOpenAIService;
+  conversationService: IConversationService;
   loggerHandler: (title: string) => loggerInterfaces.ILogger;
 };
 
@@ -28,75 +36,164 @@ export default class OpenAIController implements IOpenAIController {
 
   private readonly openAIService: IOpenAIService;
 
-  constructor({ loggerHandler, openAIService }: TOpenAIParams) {
+  private readonly conversationService: IConversationService;
+
+  constructor({
+    loggerHandler,
+    openAIService,
+    conversationService,
+  }: TOpenAIParams) {
     this.openAIService = openAIService;
+    this.conversationService = conversationService;
     this.logger = loggerHandler('OpenAIController');
   }
 
-  private _manageTextResponse(res: Response, text?: string) {
-    text !== undefined ? res.write(text) : res.end();
+  private manageTextResponse(res: Response, text?: string) {
+    if (text !== undefined) {
+      res.write(text);
+    }
   }
 
-  private _manageAudioResponse(buffer: Buffer, res: Response) {
-    res.setHeader('Content-Type', 'audio/mpeg');
-    res.send(buffer);
+  // private _manageAudioResponse(buffer: Buffer, res: Response) {
+  //   res.setHeader('Content-Type', 'audio/mpeg');
+  //   res.send(buffer);
+  // }
+
+  private async textConversationHandler(
+    res: Response,
+    inputParams: Record<string, unknown>,
+  ) {
+    const callback = (text?: string) => {
+      this.manageTextResponse(res, text);
+    };
+
+    const conversationChunkList =
+      await this.conversationService.getConversationChunkListLean(
+        inputParams.conversationId as string,
+      );
+
+    const parsedConversationChunkList = conversationChunkList.map(
+      (conversationChunk: modelInterfaces.ConversationChunkAttributes) => ({
+        role: conversationChunk.role,
+        content: conversationChunk.value,
+      }),
+    ) as ChatCompletionMessageParam[];
+
+    const parsedMessage: ChatCompletionMessageParam = {
+      role: roles[inputParams.role as string] as any,
+      content: inputParams.message as string,
+    };
+
+    const messageList: ChatCompletionMessageParam[] = [
+      ...parsedConversationChunkList,
+      parsedMessage,
+    ];
+
+    const aiResponse = await this.openAIService.handleTextConversation({
+      callback,
+      messageList,
+      params: inputParams,
+    });
+
+    await this.conversationService.createConversationChunk({
+      value: inputParams.message as string,
+      role: roles[inputParams.role as string],
+      format: modelConstants.ConversationChunkFormat.TEXT,
+      conversationId: inputParams.conversationId as string,
+    });
+
+    await this.conversationService.createConversationChunk({
+      ...aiResponse,
+      format: modelConstants.ConversationChunkFormat.TEXT,
+      conversationId: inputParams.conversationId as string,
+    });
   }
 
-  async sendTextMessage(
+  private async assistantTextConversationHandler(
+    res: Response,
+    inputParams: Record<string, unknown>,
+  ) {
+    const callback = (text?: string) => {
+      this.manageTextResponse(res, text);
+    };
+
+    const conversationLeanDocument =
+      await this.conversationService.getConversationByConversationIdLean(
+        inputParams.conversationId as string,
+      );
+
+    const conversationChunkList =
+      await this.conversationService.getConversationChunkListLean(
+        inputParams.conversationId as string,
+      );
+
+    const parsedConversationChunkList = conversationChunkList.map(
+      (conversationChunk: modelInterfaces.ConversationChunkAttributes) => ({
+        role: conversationChunk.role,
+        content: conversationChunk.value,
+      }),
+    ) as ChatCompletionMessageParam[];
+
+    const parsedMessage: ChatCompletionMessageParam = {
+      role: roles[inputParams.role as string] as any,
+      content: inputParams.message as string,
+    };
+
+    const messageList: ChatCompletionMessageParam[] = [
+      ...parsedConversationChunkList,
+      parsedMessage,
+    ];
+
+    const aiResponse = await this.openAIService.handleAssistantTextConversation(
+      {
+        callback,
+        messageList,
+        params: {
+          ...inputParams,
+          assistant: conversationLeanDocument.assistant,
+        },
+      },
+    );
+
+    await this.conversationService.createConversationChunk({
+      value: inputParams.message as string,
+      role: roles[inputParams.role as string],
+      format: modelConstants.ConversationChunkFormat.TEXT,
+      conversationId: inputParams.conversationId as string,
+    });
+
+    await this.conversationService.createConversationChunk({
+      ...aiResponse,
+      format: modelConstants.ConversationChunkFormat.TEXT,
+      conversationId: inputParams.conversationId as string,
+    });
+  }
+
+  async handleTextConversation(
     req: Request,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
-    const textResponse = (text?: string) => {
-      this._manageTextResponse(res, text);
-    };
-
-    Promise.resolve(req.body)
-      .tap(() => this.logger.logInfo('sendTextMessage'))
-      .then(validateOpenaiSendMessageInputParams)
-      .then(async (params) => {
-        if (params.hasVoiceResponse) {
-          const message = await this.openAIService.sendMessage(
-            params,
-            () => {},
-          );
-          const stream = await this.openAIService.getAudioFromMessage({
-            message,
-          });
-          this._manageAudioResponse(stream, res);
-        } else {
-          await this.openAIService.sendMessage(params, textResponse);
-        }
-      })
+    Bluebird.resolve({ body: req.body, params: req.params })
+      .tap(() => this.logger.logInfo('handleTextConversation'))
+      .then(validateOpenaiHandleTextConversationInputParams)
+      .then(this.textConversationHandler.bind(this, res))
+      .then(() => res.end())
       .catch(next);
   }
 
-  async assistantSendTextMessage(
+  async handleAssistantTextConversation(
     req: Request,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
-    const textResponse = (text?: string) => {
-      this._manageTextResponse(res, text);
-    };
-
-    Promise.resolve(req.body)
-      .tap(() => this.logger.logInfo('assistantSendTextMessage'))
-      .then(validateOpenaiSendMessageWithAssistantInputParams)
-      .then(async (params) => {
-        if (params.hasVoiceResponse) {
-          const message = await this.openAIService.sendMessageToAssistant(
-            params,
-            () => {},
-          );
-          const stream = await this.openAIService.getAudioFromMessage({
-            message,
-          });
-          this._manageAudioResponse(stream, res);
-        } else {
-          await this.openAIService.sendMessageToAssistant(params, textResponse);
-        }
-      })
-      .catch(next);
+    Bluebird.resolve({ body: req.body, params: req.params })
+      .tap(() => this.logger.logInfo('handleAssistantTextConversation'))
+      .then(validateOpenaiHandleTextConversationInputParams)
+      .then(this.assistantTextConversationHandler.bind(this, res))
+      .then(() => res.end())
+      .catch((error: unknown) => {
+        next(error);
+      });
   }
 }

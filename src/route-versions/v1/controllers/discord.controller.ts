@@ -1,3 +1,4 @@
+import Bluebird from 'bluebird';
 import { NextFunction, Request, Response } from 'express';
 import { interfaces as loggerInterfaces } from '@numengames/numinia-logger';
 
@@ -27,7 +28,7 @@ export default class DiscordController implements IDiscordController {
     res: Response,
     next: NextFunction,
   ): Promise<void> {
-    Promise.resolve(req.body)
+    Bluebird.resolve(req.body)
       .then(validateDiscordSendWebhookInputParams)
       .tap(({ season, spaceUrl, spaceName, walletId, userName }) =>
         this.logger.logInfo(

@@ -60,10 +60,10 @@ const assistants: Record<string, TAssistant> = {
     name: 'Senet Dungeon World Master',
     openaiId: 'asst_2psVgXP5Qtx0EcLf34yyK2YG',
   },
-  // LYRA: {
-  //   name: 'Lyra, the dictionary creator',
-  //   openaiId: 'asst_N6paFuUYBW1yEZyU0Tui5EAn',
-  // },
+  TEST: {
+    name: 'Test',
+    openaiId: 'asst_test',
+  },
 };
 
 export default assistants;

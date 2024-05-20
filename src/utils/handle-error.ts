@@ -23,7 +23,7 @@ function handleError(
   }
 
   if (error instanceof Boom.Boom) {
-    error = <HttpError>error.output;
+    return res.status(error.output.statusCode).json(error.output.payload);
   }
 
   let payload;

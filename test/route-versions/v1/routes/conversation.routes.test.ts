@@ -1,4 +1,3 @@
-import supertest from 'supertest';
 import {
   types,
   mongoose,
@@ -6,10 +5,12 @@ import {
   ConversationModel,
   ConversationChunkModel,
 } from '@numengames/numinia-models';
+import supertest from 'supertest';
 
 import { server } from '../../../../src/server';
+import { roles } from '../../../../src/config/openai';
 import { insertConversation } from '../../../insert-data-to-model';
-import { conversationNotExistError } from '../../../../src/errors';
+import generateStringRandomNumber from '../../../utils/generate-random-string-number';
 
 const testDatabase = require('../../../test-db')(mongoose);
 
@@ -64,7 +65,7 @@ describe('ConversationRoutes', () => {
           name: 'Test',
           type: constants.ConversationTypes.CHATGPT,
           origin: constants.ConversationOrigins.WEB,
-          conversationId: 'thread-0000000000000000000',
+          conversationId: `conversation-${generateStringRandomNumber(10)}`,
         })
         .expect(422);
     });
@@ -75,7 +76,7 @@ describe('ConversationRoutes', () => {
         .send({
           name: 'Test',
           type: constants.ConversationTypes.CHATGPT,
-          conversationId: 'thread-0000000000000000000',
+          conversationId: `conversation-${generateStringRandomNumber(10)}`,
           assistant: {
             name: 'Test',
             id: 'asst_0000000000',
@@ -90,7 +91,7 @@ describe('ConversationRoutes', () => {
         .send({
           name: 'Test',
           origin: constants.ConversationOrigins.WEB,
-          conversationId: 'thread-0000000000000000000',
+          conversationId: `conversation-${generateStringRandomNumber(10)}`,
           assistant: {
             name: 'Test',
             id: 'asst_0000000000',
@@ -106,7 +107,7 @@ describe('ConversationRoutes', () => {
           name: 'Test',
           type: constants.ConversationTypes.CHATGPT,
           origin: constants.ConversationOrigins.WEB,
-          conversationId: 'thread-0000000000000000000',
+          conversationId: `conversation-${generateStringRandomNumber(10)}`,
           assistant: {
             name: 'Test',
             id: 'asst_0000000000',
@@ -116,7 +117,7 @@ describe('ConversationRoutes', () => {
         .expect(422);
     });
 
-    describe('When the conversation with assistant has been created', () => {
+    describe('when the conversation with assistant has been created', () => {
       let response: supertest.Response;
 
       const params = {
@@ -124,7 +125,7 @@ describe('ConversationRoutes', () => {
         type: constants.ConversationTypes.CHATGPT,
         origin: constants.ConversationOrigins.WEB,
         walletId: '0x0000000000000000000000dead',
-        conversationId: 'thread-0000000000000000000',
+        conversationId: `conversation-${generateStringRandomNumber(10)}`,
         assistant: {
           name: 'Test',
           id: 'asst_0000000000',
@@ -167,7 +168,7 @@ describe('ConversationRoutes', () => {
       });
     });
 
-    describe('When the conversation with model has been created', () => {
+    describe('when the conversation with model has been created', () => {
       let response: supertest.Response;
 
       const params = {
@@ -176,7 +177,7 @@ describe('ConversationRoutes', () => {
         type: constants.ConversationTypes.CHATGPT,
         origin: constants.ConversationOrigins.WEB,
         walletId: '0x0000000000000000000000dead',
-        conversationId: 'thread-0000000000000000000',
+        conversationId: `conversation-${generateStringRandomNumber(10)}`,
       };
 
       beforeAll(async () => {
@@ -224,8 +225,8 @@ describe('ConversationRoutes', () => {
         .post(path)
         .send({
           message: 'Test',
-          conversationId: new mongoose.Types.ObjectId(),
           format: constants.ConversationChunkFormat.TEXT,
+          conversationId: `conversation-${generateStringRandomNumber(10)}`,
         })
         .expect(422);
     });
@@ -235,8 +236,8 @@ describe('ConversationRoutes', () => {
         .post(path)
         .send({
           message: 'Test',
-          role: 'assistant',
-          conversationId: new mongoose.Types.ObjectId(),
+          role: roles.USER,
+          conversationId: `conversation-${generateStringRandomNumber(10)}`,
         })
         .expect(422);
     });
@@ -245,9 +246,9 @@ describe('ConversationRoutes', () => {
       await supertest(server.app)
         .post(path)
         .send({
-          role: 'assistant',
-          conversationId: new mongoose.Types.ObjectId(),
+          role: roles.USER,
           format: constants.ConversationChunkFormat.TEXT,
+          conversationId: `conversation-${generateStringRandomNumber(10)}`,
         })
         .expect(422);
     });
@@ -257,35 +258,44 @@ describe('ConversationRoutes', () => {
         .post(path)
         .send({
           message: 'Test',
-          role: 'assistant',
+          role: roles.USER,
           format: constants.ConversationChunkFormat.TEXT,
         })
         .expect(422);
     });
 
-    describe('When the conversation does not exist', () => {
+    describe('when the conversation does not exist', () => {
       const params = {
         message: 'Test',
-        role: 'assistant',
-        conversationId: 'thread-0000000000000000000',
+        role: roles.USER,
         format: constants.ConversationChunkFormat.TEXT,
+        conversationId: `conversation-${generateStringRandomNumber(10)}`,
       };
 
-      test('it should throw a Boom.notFound error', () => {
-        expect(supertest(server.app).post(path).send(params)).rejects.toThrow(
-          conversationNotExistError(),
-        );
+      let response: supertest.Response;
+
+      beforeAll(async () => {
+        response = await supertest(server.app).post(path).send(params);
+      });
+
+      test('it should throw a Boom.notFound error', async () => {
+        expect(response.status).toBe(404);
+        expect(response.body).toMatchObject({
+          statusCode: 404,
+          error: 'Not Found',
+          message: 'Not Found',
+        });
       });
     });
 
-    describe('When the conversation chunk document has been created', () => {
+    describe('when the conversation chunk document has been created', () => {
       let response: supertest.Response;
 
       const params: Record<string, string> = {
-        message: 'Test',
-        role: 'assistant',
-        conversationId: 'thread-0000000000000000000',
+        message: 'test',
+        role: roles.USER,
         format: constants.ConversationChunkFormat.TEXT,
+        conversationId: `conversation-${generateStringRandomNumber(10)}`,
       };
 
       beforeAll(async () => {

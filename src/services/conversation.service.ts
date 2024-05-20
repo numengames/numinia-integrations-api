@@ -12,11 +12,17 @@ export interface IConversationService {
     params: Partial<modelTypes.ConversationDocument>,
   ): Promise<void>;
   createConversationChunk(
-    params: Partial<modelTypes.ConversationChunkDocument>,
+    params: Partial<modelInterfaces.ConversationChunkAttributes>,
   ): Promise<void>;
-  getConversationChunkList(
+  getConversationChunkListLean(
     conversationId: string,
-  ): Promise<modelTypes.ConversationChunkDocument[]>;
+  ): Promise<modelInterfaces.ConversationChunkAttributes[]>;
+  parseConversationChunkParams(
+    params: Record<string, string>,
+  ): modelInterfaces.ConversationChunkAttributes;
+  getConversationByConversationIdLean(
+    conversationId: string,
+  ): Promise<modelInterfaces.ConversationAttributes>;
 }
 
 interface ConversationServiceConstructor {
@@ -44,13 +50,42 @@ export default class ConversationService implements IConversationService {
 
   private async conversationExistByConversationId(
     conversationId: string,
-  ): Promise<boolean | null> {
+  ): Promise<void> {
     this.logger.logInfo(
       `getConversationByConversationId - Trying to get a conversation with conversationId ${conversationId}`,
     );
-    return this.ConversationModel.exists({
+    const conversationExist = await this.ConversationModel.exists({
+      conversationId,
+    });
+
+    if (!conversationExist) {
+      throw conversationNotExistError();
+    }
+  }
+
+  async getConversationByConversationIdLean(
+    conversationId: string,
+  ): Promise<modelInterfaces.ConversationAttributes> {
+    const conversationLeanDocument = await this.ConversationModel.findOne({
       conversationId,
     }).lean();
+
+    if (!conversationLeanDocument) {
+      throw conversationNotExistError();
+    }
+
+    return conversationLeanDocument;
+  }
+
+  parseConversationChunkParams(
+    params: Record<string, string>,
+  ): modelInterfaces.ConversationChunkAttributes {
+    return {
+      role: params.role,
+      value: params.message,
+      format: params.format,
+      conversationId: params.conversationId,
+    };
   }
 
   async createConversation(
@@ -65,37 +100,28 @@ export default class ConversationService implements IConversationService {
     );
   }
 
-  async createConversationChunk(params: Record<string, string>): Promise<void> {
-    const conversationExists = await this.conversationExistByConversationId(
-      params.conversationId,
-    );
-
-    if (!conversationExists) {
-      throw conversationNotExistError();
-    }
-
-    const parsedParams: modelInterfaces.ConversationChunkAttributes = {
-      role: params.role,
-      value: params.message,
-      format: params.format,
-      conversationId: params.conversationId,
-    };
+  async createConversationChunk(
+    params: modelInterfaces.ConversationChunkAttributes,
+  ): Promise<void> {
+    await this.conversationExistByConversationId(params.conversationId);
 
     this.logger.logInfo(
       'createConversationChunk - Creating a new message document for an existing conversation',
     );
     const conversationChunkDocument =
-      await this.ConversationChunkModel.create(parsedParams);
+      await this.ConversationChunkModel.create(params);
     this.logger.logInfo(
-      `createConversation - A new message document has been created with id ${conversationChunkDocument.id}`,
+      `createConversationChunk - A new message document has been created with id ${conversationChunkDocument.id}`,
     );
   }
 
-  async getConversationChunkList(
+  async getConversationChunkListLean(
     conversationId: string,
-  ): Promise<modelTypes.ConversationChunkDocument[]> {
+  ): Promise<modelInterfaces.ConversationChunkAttributes[]> {
+    await this.conversationExistByConversationId(conversationId);
+
     this.logger.logInfo(
-      `getConversationChunkList - Trying to get all the messages of a conversation by the conversationId ${conversationId}`,
+      `getConversationChunkListLean - Trying to get all the messages of a conversation by the conversationId ${conversationId}`,
     );
     return this.ConversationChunkModel.find(
       { conversationId },

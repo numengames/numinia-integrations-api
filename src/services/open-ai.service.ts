@@ -1,25 +1,26 @@
 import OpenAI from 'openai';
+import { types as modelTypes } from '@numengames/numinia-models';
 import { interfaces as loggerInterfaces } from '@numengames/numinia-logger';
 
-import { openaiStreamError } from '../errors';
-import { assistants, temperatures } from '../config/openai';
-import { RunCreateParamsStreaming } from 'openai/resources/beta/threads/runs';
+import { roles } from '../config/openai';
+import { openAIError, openaiStreamError } from '../errors';
+import { ChatCompletionMessageParam } from 'openai/resources';
+import { RunCreateParamsStreaming } from 'openai/resources/beta/threads/runs/runs';
+
+interface IHandleTextConversationParams {
+  params: Record<string, unknown>;
+  callback: (text?: string) => void;
+  messageList: ChatCompletionMessageParam[];
+}
 
 export interface IOpenAIService {
-  getAudioFromMessage: ({ message }: { message: any }) => Promise<Buffer>;
-  sendMessage: (
-    { hasVoiceResponse, temperature, message, model }: Record<string, string>,
-    callback: (text?: string) => void,
-  ) => Promise<void | string>;
-  sendMessageToAssistant: (
-    {
-      assistant,
-      hasVoiceResponse,
-      temperature,
-      threadId,
-    }: Record<string, string>,
-    callback: (text?: string) => void,
-  ) => Promise<void | string>;
+  handleTextConversation: (
+    params: IHandleTextConversationParams,
+  ) => Promise<Record<string, string>>;
+  handleAssistantTextConversation: (
+    params: IHandleTextConversationParams,
+  ) => Promise<Record<string, string>>;
+  // getAudioFromMessage: ({ message }: { message: any }) => Promise<Buffer>;
 }
 
 type TOpenAIService = {
@@ -27,6 +28,10 @@ type TOpenAIService = {
 };
 
 export default class OpenAIService implements IOpenAIService {
+  static DEFAULT_TEMPERATURE = 1;
+
+  static DEFAULT_OPENAI_MODEL = 'gpt-4o';
+
   private readonly openaiClient: OpenAI;
 
   private readonly logger: loggerInterfaces.ILogger;
@@ -39,122 +44,125 @@ export default class OpenAIService implements IOpenAIService {
     });
   }
 
-  private _getTemperature(temperature: string = ''): number {
-    return temperatures[temperature] || temperatures.TEMP_MEDIUM;
-  }
+  // async getAudioFromMessage({ message }: Record<string, any>): Promise<Buffer> {
+  //   try {
+  //     const response = await this.openaiClient.audio.speech.create({
+  //       model: 'tts-1',
+  //       voice: 'alloy',
+  //       input: message,
+  //     });
 
-  private _getAssistantId(assistant: string): string {
-    return assistants[assistant]?.openaiId;
-  }
+  //     const audioStream: any = response.body;
 
-  async getAudioFromMessage({ message }: Record<string, any>): Promise<Buffer> {
-    try {
-      const response = await this.openaiClient.audio.speech.create({
-        model: 'tts-1',
-        voice: 'alloy',
-        input: message,
-      });
+  //     const chunks: Buffer[] = [];
 
-      const audioStream: any = response.body;
+  //     audioStream.on('data', (chunk: Buffer) => {
+  //       chunks.push(chunk);
+  //     });
 
-      const chunks: Buffer[] = [];
+  //     return new Promise((resolve, reject) => {
+  //       audioStream.on('end', () => {
+  //         resolve(Buffer.concat(chunks));
+  //       });
 
-      audioStream.on('data', (chunk: Buffer) => {
-        chunks.push(chunk);
-      });
+  //       audioStream.on('error', (error: Error) => {
+  //         reject(error);
+  //       });
+  //     });
+  //   } catch (error: unknown) {
+  //     if (error instanceof Error) {
+  //       this.logger.logError('getAudioFromMessage - Error:', error);
+  //     }
+  //     throw new Error();
+  //   }
+  // }
 
-      return new Promise((resolve, reject) => {
-        audioStream.on('end', () => {
-          resolve(Buffer.concat(chunks));
-        });
-
-        audioStream.on('error', (error: Error) => {
-          reject(error);
-        });
-      });
-    } catch (error: any) {
-      this.logger.logError(error);
-      throw new Error();
+  private handleError(methodName: string, error: unknown): never {
+    if (error instanceof Error) {
+      this.logger.logError(`${methodName} - Error:`, error);
+      throw openAIError(error, 424);
     }
+    const errorMessage = JSON.parse(JSON.stringify(error));
+    this.logger.logError(`${methodName} - There is a problem`, errorMessage);
+    throw openaiStreamError(errorMessage);
   }
 
-  async sendMessage(
-    {
-      message: content,
-      hasVoiceResponse,
-      temperature,
-      model,
-    }: Record<string, string>,
-    callback: (text?: string) => void,
-  ): Promise<void | string> {
+  async handleTextConversation({
+    callback,
+    messageList,
+    params: {
+      model = OpenAIService.DEFAULT_OPENAI_MODEL,
+      temperature = OpenAIService.DEFAULT_TEMPERATURE,
+    },
+  }: IHandleTextConversationParams): Promise<Record<string, string>> {
     try {
-      const temp = this._getTemperature(temperature);
-
+      this.logger.logInfo(
+        'handleTextConversation - Sending the messageList to the model',
+      );
       const stream = await this.openaiClient.chat.completions.create({
         stream: true,
-        model: model || 'gpt-3.5-turbo',
-        messages: [{ role: 'user', content }],
-        temperature: temp || temperatures.TEMP_MEDIUM,
+        messages: messageList,
+        model: model as string,
+        temperature: temperature as number,
       });
 
       let message = '';
 
+      this.logger.logInfo(
+        'handleTextConversation - There is a response from openAI!',
+      );
       for await (const chunk of stream) {
-        const chunkMessage = chunk.choices[0]?.delta.content || '';
+        const chunkMessage = chunk.choices[0]?.delta.content;
 
-        message += chunkMessage;
-
-        if (!hasVoiceResponse) {
-          callback(chunkMessage);
+        if (chunkMessage !== undefined) {
+          message += chunkMessage;
+          callback(chunkMessage as string);
         }
       }
 
-      return hasVoiceResponse ? message : callback();
+      return { role: roles.ASSISTANT, value: message };
     } catch (error: unknown) {
-      const errorMessage =
-        typeof error === 'string' ? error : JSON.parse(JSON.stringify(error));
-
-      this.logger.logError(
-        'There is a problem sending a message',
-        errorMessage,
-      );
-      throw openaiStreamError(errorMessage.message);
+      this.handleError('handleTextConversation', error);
     }
   }
 
-  async sendMessageToAssistant(
-    {
-      assistant,
-      hasVoiceResponse,
-      temperature,
-      message: content,
-    }: Record<string, string>,
-    callback: (text?: string) => void,
-  ): Promise<void | string> {
+  async handleAssistantTextConversation({
+    callback,
+    messageList,
+    params: { assistant, temperature = OpenAIService.DEFAULT_TEMPERATURE },
+  }: IHandleTextConversationParams): Promise<Record<string, string>> {
     try {
-      const temp = this._getTemperature(temperature);
-      const assistantId = this._getAssistantId(assistant);
+      const assistantId = (assistant as modelTypes.ConversationDocument).id;
 
-      this.logger.logInfo('sendMessageToAssistant - Creating the thread');
+      this.logger.logInfo(
+        'handleAssistantTextConversation - Building the thread with the list of messages',
+      );
       const thread = await this.openaiClient.beta.threads.create({
-        messages: [{ role: 'assistant', content }],
+        messages:
+          messageList as OpenAI.Beta.Threads.ThreadCreateParams.Message[],
       });
 
       this.logger.logInfo(
-        `sendMessageToAssistant - Trying to send a message to the assistant ${assistant} with id ${assistantId}`,
+        'handleAssistantTextConversation - Building the stream',
       );
       const params: RunCreateParamsStreaming = {
-        assistant_id: assistantId,
         stream: true,
+        assistant_id: assistantId,
       };
-
-      if (temp) {
-        params.temperature = temp;
+      if (temperature) {
+        params.temperature = temperature as number;
       }
 
+      this.logger.logInfo(
+        `handleAssistantTextConversation - Sending the messageList to the model being helped by the assistant with id ${assistantId}`,
+      );
       const stream = await this.openaiClient.beta.threads.runs.create(
         thread.id,
         params,
+      );
+
+      this.logger.logInfo(
+        'handleAssistantTextConversation - There is a response from openAI!',
       );
 
       let message = '';
@@ -162,25 +170,17 @@ export default class OpenAIService implements IOpenAIService {
       for await (const event of stream) {
         if (event.event === 'thread.message.delta') {
           const chunk = event.data.delta.content?.[0];
+
           if (chunk && 'text' in chunk && chunk.text && chunk.text.value) {
             message += chunk.text.value;
-            if (!hasVoiceResponse) {
-              callback(chunk.text.value);
-            }
+            callback(chunk.text.value);
           }
         }
       }
 
-      return hasVoiceResponse ? message : callback();
+      return { role: roles.ASSISTANT, value: message };
     } catch (error: unknown) {
-      const errorMessage =
-        typeof error === 'string' ? error : JSON.parse(JSON.stringify(error));
-
-      this.logger.logError(
-        'sendMessageToAssistantStreamRaw - There is a problem sending a message',
-        errorMessage,
-      );
-      throw openaiStreamError(errorMessage.error);
+      this.handleError('handleTextConversation', error);
     }
   }
 }

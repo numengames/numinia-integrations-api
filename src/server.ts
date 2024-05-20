@@ -2,7 +2,6 @@ import 'dotenv/config';
 import express from 'express';
 
 import cors from 'cors';
-import Bluebird from 'bluebird';
 import compression from 'compression';
 
 import db from './config/db';
@@ -12,8 +11,6 @@ import v1Routes from './route-versions/v1';
 import handleError from './utils/handle-error';
 import { loggerMiddleware } from '@numengames/numinia-logger';
 
-global.Promise = <any>Bluebird;
-
 class Server {
   public app: express.Application;
 
@@ -22,6 +19,7 @@ class Server {
     this.preMiddlewareConfig();
     this.routes();
     this.postMiddlewareConfig();
+    this.mongo();
   }
 
   public routes(): void {

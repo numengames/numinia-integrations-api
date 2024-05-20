@@ -4,8 +4,9 @@ import {
   ConversationChunkModel,
   interfaces as modelInterfaces,
 } from '@numengames/numinia-models';
-import generateStringRandomNumber from './utils/generate-random-string-number';
 import { faker } from '@faker-js/faker';
+
+import generateStringRandomNumber from './utils/generate-random-string-number';
 
 export async function insertConversation(
   params: Partial<modelInterfaces.ConversationAttributes>,
@@ -13,7 +14,7 @@ export async function insertConversation(
   const parsedParams: Partial<modelInterfaces.ConversationAttributes> = {
     name: params.name || faker.lorem.word(),
     conversationId:
-      params.conversationId || `thread-${generateStringRandomNumber(10)}`,
+      params.conversationId || `conversation-${generateStringRandomNumber(10)}`,
     type: params.type || constants.ConversationTypes.CHATGPT,
     walletId: params.walletId || faker.finance.ethereumAddress(),
     origin: params.origin || constants.ConversationOrigins.DISCORD,
@@ -38,7 +39,7 @@ export async function insertConversationChunk(
     value: params.message || faker.lorem.lines(1),
     format: params.format || constants.ConversationChunkFormat.TEXT,
     conversationId:
-      params.conversationId || `thread-${generateStringRandomNumber(10)}`,
+      params.conversationId || `conversation-${generateStringRandomNumber(10)}`,
   };
 
   return ConversationChunkModel.create(parsedParams);

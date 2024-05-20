@@ -4,7 +4,7 @@ import { interfaces as loggerInterfaces } from '@numengames/numinia-logger';
 import OpenAIController, {
   IOpenAIController,
 } from '../controllers/openai.controller';
-import { openAIService } from '../../../services';
+import { openAIService, conversationService } from '../../../services';
 
 export default class OpenAIRoutes {
   router: Router;
@@ -17,6 +17,7 @@ export default class OpenAIRoutes {
     this.openAIController = new OpenAIController({
       loggerHandler,
       openAIService,
+      conversationService,
     });
 
     this.routes();
@@ -24,12 +25,12 @@ export default class OpenAIRoutes {
 
   routes(): void {
     this.router.post(
-      '/send-text-message',
-      this.openAIController.sendTextMessage.bind(this.openAIController),
+      '/conversation/text/:conversationId',
+      this.openAIController.handleTextConversation.bind(this.openAIController),
     );
     this.router.post(
-      '/assistant/send-text-message',
-      this.openAIController.assistantSendTextMessage.bind(
+      '/conversation/assistant/text/:conversationId',
+      this.openAIController.handleAssistantTextConversation.bind(
         this.openAIController,
       ),
     );
