@@ -1,24 +1,38 @@
 import { Router } from 'express';
+import { interfaces as loggerInterfaces } from '@numengames/numinia-logger';
 
-import { openAIService } from '../../services';
-import { ILogger } from '../../../utils/logger';
-import OpenAIController, { IOpenAIController } from '../controllers/openai.controller';
+import OpenAIController, {
+  IOpenAIController,
+} from '../controllers/openai.controller';
+import { openAIService, conversationService } from '../../../services';
 
 export default class OpenAIRoutes {
   router: Router;
 
   private openAIController: IOpenAIController;
 
-  constructor(logger: (title: string) => ILogger) {
+  constructor(loggerHandler: (title: string) => loggerInterfaces.ILogger) {
     this.router = Router();
-  
-    this.openAIController = new OpenAIController({ logger, openAIService });
+
+    this.openAIController = new OpenAIController({
+      loggerHandler,
+      openAIService,
+      conversationService,
+    });
 
     this.routes();
   }
 
   routes(): void {
-    this.router.post('/send-text-message', this.openAIController.sendTextMessage.bind(this.openAIController));
-    this.router.post('/assistant/send-text-message', this.openAIController.assistantSendTextMessage.bind(this.openAIController));
+    this.router.post(
+      '/conversation/text/:conversationId',
+      this.openAIController.handleTextConversation.bind(this.openAIController),
+    );
+    this.router.post(
+      '/conversation/assistant/text/:conversationId',
+      this.openAIController.handleAssistantTextConversation.bind(
+        this.openAIController,
+      ),
+    );
   }
 }

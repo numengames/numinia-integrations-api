@@ -1,8 +1,10 @@
-import Boom from '@hapi/boom';
+import Boom, { Payload } from '@hapi/boom';
 
 export interface CustomError extends Error {
-  code: number
+  errorCode?: string;
 }
 export interface HttpError extends Boom.Output {
-  error: CustomError
+  payload: Payload;
+  statusCode: number;
+  error?: CustomError;
 }
