@@ -1,7 +1,7 @@
 import openaiAssistants from './openai/assistants';
 
 export default {
-  port: 8000,
+  port: process.env.SERVER_PORT || 8000,
   mongo: {
     protocol: process.env.MONGODB_PROTOCOL || 'mongodb',
     host: process.env.MONGODB_HOST || '',

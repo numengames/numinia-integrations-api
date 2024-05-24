@@ -18,6 +18,11 @@ export interface IConversationController {
     res: Response,
     next: NextFunction,
   ): Promise<void>;
+  getConversation(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void>;
 }
 
 interface ConversationControllerConstructorParams {
@@ -79,6 +84,22 @@ export default class OpenAIController implements IConversationController {
         ),
       )
       .then(res.status(201).send.bind(res))
+      .catch(next);
+  }
+
+  async getConversation(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    Bluebird.resolve(req.params.conversationId)
+      .tap(() => this.logger.logInfo('getConversation'))
+      .then(
+        this.conversationService.getConversationByConversationIdLean.bind(
+          this.conversationService,
+        ),
+      )
+      .then(res.status(200).send.bind(res))
       .catch(next);
   }
 }

@@ -36,5 +36,11 @@ export default class ConversationRoutes {
         this.conversationController,
       ),
     );
+    this.router.get(
+      '/:conversationId',
+      this.conversationController.getConversation.bind(
+        this.conversationController,
+      ),
+    );
   }
 }

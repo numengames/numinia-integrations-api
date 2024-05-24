@@ -340,4 +340,46 @@ describe('ConversationRoutes', () => {
       });
     });
   });
+
+  describe('GET /:id', () => {
+    const path = `${basePath}/`;
+
+    test('when the assistant does not exist in database, it should throw an error', async () => {
+      await supertest(server.app).post(`${path}/1`).expect(404);
+    });
+
+    describe('when the conversation exists in database', () => {
+      let response: supertest.Response;
+
+      const conversationId = `conversation-${generateStringRandomNumber(10)}`;
+
+      beforeAll(async () => {
+        await insertConversation({ conversationId });
+
+        response = await supertest(server.app).get(`${path}/${conversationId}`);
+      });
+
+      afterAll(() => ConversationModel.deleteOne({ conversationId }));
+
+      test('it should response a statusCode of 200', () => {
+        expect(response.statusCode).toBe(200);
+      });
+
+      test('it should store all the params in the database', async () => {
+        const conversationDocument = <types.ConversationDocument>(
+          await ConversationModel.findOne({ conversationId })
+        );
+
+        expect(conversationDocument._id).toBeDefined();
+        expect(conversationDocument.type).toBeDefined();
+        expect(conversationDocument.name).toBeDefined();
+        expect(conversationDocument.origin).toBeDefined();
+        expect(conversationDocument.isActive).toBeTruthy();
+        expect(conversationDocument.walletId).toBeDefined();
+        expect(conversationDocument.createdAt).toBeDefined();
+        expect(conversationDocument.updatedAt).toBeDefined();
+        expect(conversationDocument.conversationId).toBe(conversationId);
+      });
+    });
+  });
 });
