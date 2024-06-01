@@ -9,7 +9,7 @@ import config from './config';
 
 import v1Routes from './route-versions/v1';
 import handleError from './utils/handle-error';
-import { loggerMiddleware } from '@numengames/numinia-logger';
+import { initExpressLogger } from '@numengames/numinia-logger';
 
 class Server {
   public app: express.Application;
@@ -33,7 +33,7 @@ class Server {
     this.app.use(compression());
     this.app.use(cors());
     // TODO: Try PINO package & pino-loki-transport instead of winston & winston-loki
-    loggerMiddleware(config.logger, this.app);
+    initExpressLogger(config.logger, this.app);
   }
 
   private mongo() {

@@ -1,6 +1,6 @@
 import Boom from '@hapi/boom';
 import { Request, Response, NextFunction } from 'express';
-import { loggerHandler } from '@numengames/numinia-logger';
+import { createLoggerHandler as loggerHandler } from '@numengames/numinia-logger';
 
 import { CustomError, HttpError } from '../types/errors';
 

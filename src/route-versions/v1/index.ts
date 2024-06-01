@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { loggerHandler } from '@numengames/numinia-logger';
+import { createLoggerHandler as loggerHandler } from '@numengames/numinia-logger';
 
 import MonitRoutes from './routes/monit.routes';
 import OpenAIRoutes from './routes/openai.routes';

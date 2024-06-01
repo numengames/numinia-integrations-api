@@ -2,7 +2,7 @@ import {
   ConversationModel,
   ConversationChunkModel,
 } from '@numengames/numinia-models';
-import { loggerHandler } from '@numengames/numinia-logger';
+import { createLoggerHandler as loggerHandler } from '@numengames/numinia-logger';
 
 import OpenAIService from './open-ai.service';
 import ConversationService from './conversation.service';
