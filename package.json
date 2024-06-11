@@ -36,7 +36,7 @@
   "dependencies": {
     "@hapi/boom": "^10.0.1",
     "@numengames/numinia-logger": "^2.3.1",
-    "@numengames/numinia-models": "^1.6.0",
+    "@numengames/numinia-models": "^2.2.0",
     "bcrypt": "^5.1.1",
     "bluebird": "^3.7.2",
     "compression": "^1.7.4",

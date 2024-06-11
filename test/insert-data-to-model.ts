@@ -1,5 +1,7 @@
 import {
+  mongoose,
   constants,
+  UserModel,
   ConversationModel,
   ConversationChunkModel,
   interfaces as modelInterfaces,
@@ -16,7 +18,6 @@ export async function insertConversation(
     conversationId:
       params.conversationId || `conversation-${generateStringRandomNumber(10)}`,
     type: params.type || constants.ConversationTypes.CHATGPT,
-    walletId: params.walletId || faker.finance.ethereumAddress(),
     origin: params.origin || constants.ConversationOrigins.DISCORD,
   };
 
@@ -28,11 +29,20 @@ export async function insertConversation(
     parsedParams.model = 'gpt-4o'; // By default, we set one
   }
 
+  if (params.user) {
+    parsedParams.user = params.user;
+  }
+
   return ConversationModel.create(parsedParams);
 }
 
+interface InsertConversationChunkParams
+  extends Partial<modelInterfaces.ConversationChunkAttributes> {
+  message?: string;
+}
+
 export async function insertConversationChunk(
-  params: Record<string, string>,
+  params: InsertConversationChunkParams = {},
 ): Promise<modelInterfaces.ConversationChunkAttributes> {
   const parsedParams: Partial<modelInterfaces.ConversationChunkAttributes> = {
     role: params.role || faker.helpers.arrayElement(['assistant', 'user']),
@@ -43,4 +53,35 @@ export async function insertConversationChunk(
   };
 
   return ConversationChunkModel.create(parsedParams);
+}
+
+interface InsertUserParams extends Partial<modelInterfaces.UserAttributes> {
+  account?: modelInterfaces.UserAccountAttributes;
+}
+
+export async function insertUser(
+  params: InsertUserParams = {},
+): Promise<modelInterfaces.UserAttributes> {
+  const query: Partial<modelInterfaces.UserAttributes> = {
+    accounts: [],
+    lastConectionDate: new Date(),
+    userName: faker.internet.userName(),
+    wallet: faker.finance.ethereumAddress(),
+    isActive: faker.helpers.arrayElement([true, false]),
+    isBlocked: faker.helpers.arrayElement([true, false]),
+  };
+
+  if (!params.account) {
+    query.accounts?.push({
+      kind: constants.AccountKindTypes.INTERNAL,
+      accountId: new mongoose.Types.ObjectId(),
+    } as any);
+  } else {
+    query.accounts?.push(params.account);
+  }
+
+  return UserModel.create({
+    ...query,
+    ...params,
+  });
 }

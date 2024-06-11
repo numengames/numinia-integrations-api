@@ -4,7 +4,7 @@ import { interfaces as loggerInterfaces } from '@numengames/numinia-logger';
 import ConversationController, {
   IConversationController,
 } from '../controllers/conversation.controller';
-import { conversationService, openAIService } from '../../../services';
+import { userService, conversationService } from '../../../services';
 
 export default class ConversationRoutes {
   router: Router;
@@ -15,8 +15,8 @@ export default class ConversationRoutes {
     this.router = Router();
 
     this.conversationController = new ConversationController({
+      userService,
       loggerHandler,
-      openAIService,
       conversationService,
     });
 

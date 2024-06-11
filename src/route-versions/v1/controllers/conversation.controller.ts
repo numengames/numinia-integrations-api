@@ -1,8 +1,9 @@
 import Bluebird from 'bluebird';
 import { NextFunction, Request, Response } from 'express';
+import { types as modelTypes } from '@numengames/numinia-models';
 import { interfaces as loggerInterfaces } from '@numengames/numinia-logger';
 
-import { IOpenAIService } from '../../../services/open-ai.service';
+import { IUserService } from '../../../services/user.service';
 import { IConversationService } from '../../../services/conversation.service';
 import validateCreateNewConversationParams from '../../../validators/validate-create-new-conversation-input-params';
 import validateStackMessageToConversationParams from '../../../validators/validate-stack-message-to-conversation-input-params';
@@ -26,26 +27,39 @@ export interface IConversationController {
 }
 
 interface ConversationControllerConstructorParams {
-  openAIService: IOpenAIService;
+  userService: IUserService;
   conversationService: IConversationService;
   loggerHandler: (title: string) => loggerInterfaces.ILogger;
 }
 
 export default class OpenAIController implements IConversationController {
-  private readonly openAIService: IOpenAIService;
+  private readonly userService: IUserService;
 
   private readonly logger: loggerInterfaces.ILogger;
 
   private readonly conversationService: IConversationService;
 
   constructor({
+    userService,
     loggerHandler,
-    openAIService,
     conversationService,
   }: ConversationControllerConstructorParams) {
-    this.openAIService = openAIService;
+    this.userService = userService;
     this.conversationService = conversationService;
     this.logger = loggerHandler('OpenAIController');
+  }
+
+  private async handleCreateConversation(
+    conversationParams: Record<string, unknown>,
+  ): Promise<void> {
+    const userDocument = await this.userService.getUserFromWalletId(
+      conversationParams.walletId as string,
+    );
+
+    await this.conversationService.createConversation({
+      ...(conversationParams as Partial<modelTypes.ConversationDocument>),
+      ...(userDocument ? { user: userDocument._id } : {}),
+    });
   }
 
   async createConversation(
@@ -56,11 +70,7 @@ export default class OpenAIController implements IConversationController {
     Bluebird.resolve(req.body)
       .tap(() => this.logger.logInfo('createConversation'))
       .then(validateCreateNewConversationParams)
-      .then(
-        this.conversationService.createConversation.bind(
-          this.conversationService,
-        ),
-      )
+      .then(this.handleCreateConversation.bind(this))
       .then(res.status(201).send.bind(res))
       .catch(next);
   }
