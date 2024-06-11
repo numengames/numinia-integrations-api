@@ -1,6 +1,7 @@
 import {
   mongoose,
   constants,
+  UserModel,
   ConversationModel,
   types as modelTypes,
   ConversationChunkModel,
@@ -8,6 +9,7 @@ import {
 } from '@numengames/numinia-models';
 
 import {
+  insertUser,
   insertConversation,
   insertConversationChunk,
 } from '../../insert-data-to-model';
@@ -23,21 +25,31 @@ describe('ConversationService', () => {
   afterAll(() => testDatabase.close());
 
   describe('createConversation', () => {
+    let userDocument: modelInterfaces.UserAttributes;
+
     const parsedParams: modelInterfaces.ConversationAttributes = {
       name: 'test',
       model: 'gpt-4o',
       conversationId: 'test-999',
-      walletId: '0x00000000000000000000dead',
       type: constants.ConversationTypes.CHATGPT,
       origin: constants.ConversationOrigins.DISCORD,
     };
 
-    beforeAll(() => conversationService.createConversation(parsedParams));
+    beforeAll(async () => {
+      userDocument = await insertUser();
+
+      parsedParams.user = userDocument._id;
+
+      await conversationService.createConversation(parsedParams);
+    });
 
     afterAll(() =>
-      ConversationModel.deleteOne({
-        conversationId: parsedParams.conversationId,
-      }),
+      Promise.all([
+        UserModel.deleteOne({ _id: userDocument._id }),
+        ConversationModel.deleteOne({
+          conversationId: parsedParams.conversationId,
+        }),
+      ]),
     );
 
     test('it should create an account document with a specified params', async () => {
@@ -53,7 +65,9 @@ describe('ConversationService', () => {
       expect(conversationDocument.type).toBe(parsedParams.type);
       expect(conversationDocument.model).toBe(parsedParams.model);
       expect(conversationDocument.origin).toBe(parsedParams.origin);
-      expect(conversationDocument.walletId).toBe(parsedParams.walletId);
+      expect(conversationDocument.user?.toString()).toBe(
+        parsedParams.user?.toString(),
+      );
       expect(conversationDocument.conversationId).toBe(
         parsedParams.conversationId,
       );

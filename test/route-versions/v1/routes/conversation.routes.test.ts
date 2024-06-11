@@ -2,14 +2,16 @@ import {
   types,
   mongoose,
   constants,
+  UserModel,
   ConversationModel,
   ConversationChunkModel,
+  interfaces as modelInterfaces,
 } from '@numengames/numinia-models';
 import supertest from 'supertest';
 
 import { server } from '../../../../src/server';
 import { roles } from '../../../../src/config/openai';
-import { insertConversation } from '../../../insert-data-to-model';
+import { insertConversation, insertUser } from '../../../insert-data-to-model';
 import generateStringRandomNumber from '../../../utils/generate-random-string-number';
 
 const testDatabase = require('../../../test-db')(mongoose);
@@ -120,11 +122,10 @@ describe('ConversationRoutes', () => {
     describe('when the conversation with assistant has been created', () => {
       let response: supertest.Response;
 
-      const params = {
+      const params: Partial<modelInterfaces.ConversationAttributes> = {
         name: 'Test',
         type: constants.ConversationTypes.CHATGPT,
         origin: constants.ConversationOrigins.WEB,
-        walletId: '0x0000000000000000000000dead',
         conversationId: `conversation-${generateStringRandomNumber(10)}`,
         assistant: {
           name: 'Test',
@@ -137,7 +138,9 @@ describe('ConversationRoutes', () => {
       });
 
       afterAll(() =>
-        ConversationModel.deleteOne({ conversationId: params.conversationId }),
+        ConversationModel.deleteOne({
+          conversationId: params.conversationId,
+        }),
       );
 
       test('it should response a statusCode of 201 - Created', () => {
@@ -158,12 +161,12 @@ describe('ConversationRoutes', () => {
         expect(conversationDocument.createdAt).toBeDefined();
         expect(conversationDocument.updatedAt).toBeDefined();
         expect(conversationDocument.origin).toBe(params.origin);
-        expect(conversationDocument.walletId).toBe(params.walletId);
+        expect(conversationDocument.user).not.toBeDefined();
         expect(conversationDocument.conversationId).toBe(params.conversationId);
         expect(conversationDocument.assistant).toBeDefined();
-        expect(conversationDocument.assistant?.id).toBe(params.assistant.id);
+        expect(conversationDocument.assistant?.id).toBe(params.assistant?.id);
         expect(conversationDocument.assistant?.name).toBe(
-          params.assistant.name,
+          params.assistant?.name,
         );
       });
     });
@@ -171,21 +174,31 @@ describe('ConversationRoutes', () => {
     describe('when the conversation with model has been created', () => {
       let response: supertest.Response;
 
-      const params = {
+      let userDocument: modelInterfaces.UserAttributes;
+
+      const params: Record<string, unknown> = {
         name: 'Test',
         model: 'gpt-4o',
         type: constants.ConversationTypes.CHATGPT,
         origin: constants.ConversationOrigins.WEB,
-        walletId: '0x0000000000000000000000dead',
         conversationId: `conversation-${generateStringRandomNumber(10)}`,
       };
 
       beforeAll(async () => {
+        userDocument = await insertUser();
+
+        params.walletId = userDocument.wallet;
+
         response = await supertest(server.app).post(path).send(params);
       });
 
       afterAll(() =>
-        ConversationModel.deleteOne({ conversationId: params.conversationId }),
+        Promise.all([
+          UserModel.deleteOne({ _id: userDocument._id }),
+          ConversationModel.deleteOne({
+            conversationId: params.conversationId,
+          }),
+        ]),
       );
 
       test('it should response a statusCode of 201 - Created', () => {
@@ -201,13 +214,15 @@ describe('ConversationRoutes', () => {
 
         expect(conversationDocument._id).toBeDefined();
         expect(conversationDocument.isActive).toBeTruthy();
+        expect(conversationDocument.user?.toString()).toBe(
+          userDocument._id!.toString(),
+        );
         expect(conversationDocument.type).toBe(params.type);
         expect(conversationDocument.name).toBe(params.name);
         expect(conversationDocument.createdAt).toBeDefined();
         expect(conversationDocument.updatedAt).toBeDefined();
         expect(conversationDocument.model).toBe(params.model);
         expect(conversationDocument.origin).toBe(params.origin);
-        expect(conversationDocument.walletId).toBe(params.walletId);
         expect(conversationDocument.conversationId).toBe(params.conversationId);
       });
     });
@@ -351,15 +366,24 @@ describe('ConversationRoutes', () => {
     describe('when the conversation exists in database', () => {
       let response: supertest.Response;
 
+      let userDocument: modelInterfaces.UserAttributes;
+
       const conversationId = `conversation-${generateStringRandomNumber(10)}`;
 
       beforeAll(async () => {
-        await insertConversation({ conversationId });
+        userDocument = await insertUser();
+
+        await insertConversation({ conversationId, user: userDocument._id });
 
         response = await supertest(server.app).get(`${path}/${conversationId}`);
       });
 
-      afterAll(() => ConversationModel.deleteOne({ conversationId }));
+      afterAll(() =>
+        Promise.all([
+          UserModel.deleteOne({ _id: userDocument._id }),
+          ConversationModel.deleteOne({ conversationId }),
+        ]),
+      );
 
       test('it should response a statusCode of 200', () => {
         expect(response.statusCode).toBe(200);
@@ -375,7 +399,9 @@ describe('ConversationRoutes', () => {
         expect(conversationDocument.name).toBeDefined();
         expect(conversationDocument.origin).toBeDefined();
         expect(conversationDocument.isActive).toBeTruthy();
-        expect(conversationDocument.walletId).toBeDefined();
+        expect(conversationDocument.user?.toString()).toBe(
+          userDocument._id?.toString(),
+        );
         expect(conversationDocument.createdAt).toBeDefined();
         expect(conversationDocument.updatedAt).toBeDefined();
         expect(conversationDocument.conversationId).toBe(conversationId);
