@@ -60,6 +60,10 @@ const assistants: Record<string, TAssistant> = {
     name: 'Senet Dungeon World Master',
     openaiId: 'asst_2psVgXP5Qtx0EcLf34yyK2YG',
   },
+  LYRA_DOOR_OF_THOTH: {
+    name: 'Lyra Door of Thoth',
+    openaiId: 'asst_oU2hZRs1Asxkoq1GNCAkmgQ2',
+  },
   TEST: {
     name: 'Test',
     openaiId: 'asst_test',
