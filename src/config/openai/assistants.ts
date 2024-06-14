@@ -64,6 +64,10 @@ const assistants: Record<string, TAssistant> = {
     name: 'Lyra Door of Thoth',
     openaiId: 'asst_oU2hZRs1Asxkoq1GNCAkmgQ2',
   },
+  URSA_ALCHEMIST_TOWER_DA: {
+    name: 'ursa_alchemists_tower_da_v0.1.0',
+    openaiId: 'asst_pb1KHFl4eI3I2N1XNpT1XD7k',
+  },
   TEST: {
     name: 'Test',
     openaiId: 'asst_test',
