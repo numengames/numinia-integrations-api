@@ -68,6 +68,10 @@ const assistants: Record<string, TAssistant> = {
     name: 'ursa_alchemists_tower_da_v0.1.0',
     openaiId: 'asst_pb1KHFl4eI3I2N1XNpT1XD7k',
   },
+  NI_PABLOFM_CV_DA: {
+    name: 'Ni_PabloFM_CV_Experience_v0.1.0',
+    openaiId: 'asst_1SnbIduayy5yA50pRvc4FWiU',
+  },
   TEST: {
     name: 'Test',
     openaiId: 'asst_test',
