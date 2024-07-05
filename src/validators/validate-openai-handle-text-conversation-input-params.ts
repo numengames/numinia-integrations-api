@@ -15,6 +15,7 @@ const schema = Joi.object({
     .trim()
     .valid(...Object.keys(roles))
     .required(),
+  isStreamResponse: Joi.boolean(),
   message: Joi.string().trim().required(),
   conversationId: Joi.string().trim().required(),
 }).required();

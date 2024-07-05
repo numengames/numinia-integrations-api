@@ -167,6 +167,10 @@ export default class OpenAIController implements IOpenAIController {
       format: modelConstants.ConversationChunkFormat.TEXT,
       conversationId: inputParams.conversationId as string,
     });
+
+    if (!inputParams.isStreamResponse) {
+      return aiResponse;
+    }
   }
 
   async handleTextConversation(
@@ -191,7 +195,9 @@ export default class OpenAIController implements IOpenAIController {
       .tap(() => this.logger.logInfo('handleAssistantTextConversation'))
       .then(validateOpenaiHandleTextConversationInputParams)
       .then(this.assistantTextConversationHandler.bind(this, res))
-      .then(() => res.end())
+      .then(
+        (response) => (response && res.status(200).send(response)) || res.end(),
+      )
       .catch((error: unknown) => {
         next(error);
       });

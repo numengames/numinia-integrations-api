@@ -91,6 +91,7 @@ export default class OpenAIService implements IOpenAIService {
     callback,
     messageList,
     params: {
+      isStreamResponse = true,
       model = OpenAIService.DEFAULT_OPENAI_MODEL,
       temperature = OpenAIService.DEFAULT_TEMPERATURE,
     },
@@ -116,7 +117,9 @@ export default class OpenAIService implements IOpenAIService {
 
         if (chunkMessage !== undefined) {
           message += chunkMessage;
-          callback(chunkMessage as string);
+          if (isStreamResponse) {
+            callback(chunkMessage as string);
+          }
         }
       }
 
@@ -129,7 +132,11 @@ export default class OpenAIService implements IOpenAIService {
   async handleAssistantTextConversation({
     callback,
     messageList,
-    params: { assistant, temperature = OpenAIService.DEFAULT_TEMPERATURE },
+    params: {
+      assistant,
+      isStreamResponse = true,
+      temperature = OpenAIService.DEFAULT_TEMPERATURE,
+    },
   }: IHandleTextConversationParams): Promise<Record<string, string>> {
     try {
       const assistantId = (assistant as modelTypes.ConversationDocument).id;
@@ -173,11 +180,19 @@ export default class OpenAIService implements IOpenAIService {
 
           if (chunk && 'text' in chunk && chunk.text && chunk.text.value) {
             message += chunk.text.value;
-            callback(chunk.text.value);
+            if (isStreamResponse) {
+              this.logger.logInfo(
+                'handleAssistantTextConversation - Sending chunks with openAI response',
+              );
+              callback(chunk.text.value);
+            }
           }
         }
       }
 
+      this.logger.logInfo(
+        'handleAssistantTextConversation - Sending openAI response',
+      );
       return { role: roles.ASSISTANT, value: message };
     } catch (error: unknown) {
       this.handleError('handleTextConversation', error);
