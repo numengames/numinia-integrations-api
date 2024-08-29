@@ -72,6 +72,10 @@ const assistants: Record<string, TAssistant> = {
     name: 'Ni_PabloFM_CV_Experience_v0.1.0',
     openaiId: 'asst_1SnbIduayy5yA50pRvc4FWiU',
   },
+  LYRA_SILVER_DOOR: {
+    name: 'Lyra Silver door',
+    openaiId: 'asst_SFKwLTAKE4sYNVnNyDer8EMk',
+  },
   TEST: {
     name: 'Test',
     openaiId: 'asst_test',

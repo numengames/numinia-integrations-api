@@ -11,4 +11,5 @@ export const paramNotValidError = badData;
 export const userNotExistError = notFound;
 export const openaiStreamError = failedDependency;
 export const conversationNotExistError = notFound;
+export const openaiThreadRunError = failedDependency;
 export const userHasNotInternalAccountError = notFound;

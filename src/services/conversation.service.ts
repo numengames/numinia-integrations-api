@@ -106,7 +106,7 @@ export default class ConversationService implements IConversationService {
     await this.conversationExistByConversationId(params.conversationId);
 
     this.logger.logInfo(
-      'createConversationChunk - Creating a new message document for an existing conversation',
+      `createConversationChunk - Creating a new message document for an existing conversation id ${params.conversationId}`,
     );
     const conversationChunkDocument =
       await this.ConversationChunkModel.create(params);

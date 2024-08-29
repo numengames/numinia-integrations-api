@@ -2,8 +2,12 @@ import OpenAI from 'openai';
 import { types as modelTypes } from '@numengames/numinia-models';
 import { interfaces as loggerInterfaces } from '@numengames/numinia-logger';
 
+import {
+  openAIError,
+  openaiStreamError,
+  openaiThreadRunError,
+} from '../errors';
 import { roles } from '../config/openai';
-import { openAIError, openaiStreamError } from '../errors';
 import { ChatCompletionMessageParam } from 'openai/resources';
 import { RunCreateParamsStreaming } from 'openai/resources/beta/threads/runs/runs';
 
@@ -142,7 +146,7 @@ export default class OpenAIService implements IOpenAIService {
       const assistantId = (assistant as modelTypes.ConversationDocument).id;
 
       this.logger.logInfo(
-        'handleAssistantTextConversation - Building the thread with the list of messages',
+        `handleAssistantTextConversation - Building the thread with the list of messages for assistantId ${assistantId}`,
       );
       const thread = await this.openaiClient.beta.threads.create({
         messages:
@@ -175,6 +179,10 @@ export default class OpenAIService implements IOpenAIService {
       let message = '';
 
       for await (const event of stream) {
+        if (event.event === 'thread.run.failed') {
+          throw openaiThreadRunError(event.data.last_error as any);
+        }
+
         if (event.event === 'thread.message.delta') {
           const chunk = event.data.delta.content?.[0];
 
